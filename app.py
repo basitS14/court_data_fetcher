@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify , send_file
 from flask_cors import CORS
 from src.webscraper import WebScraper
 from flask_sqlalchemy import SQLAlchemy
@@ -7,6 +7,9 @@ import os
 from sqlalchemy import text
 import warnings
 warnings.filterwarnings("ignore")
+from io import BytesIO
+from urllib.parse import urlparse
+import requests
 
 load_dotenv()
 
@@ -166,6 +169,31 @@ def get_order_details():
     except Exception as e:
         print(f"Error fetching order details: {e}")
         return jsonify({"error": "Internal server error"}), 500
+
+@app.route("/download" , methods=["POST"])
+def download_pdf():
+    data = request.get_json()
+    url = data.get("link")
+    
+    try:
+        response = requests.get(url)
+        if response.status_code != 200:
+            return jsonify({"error": "Failed to download from source"}), 400
+        
+        # Extract filename from URL
+        parsed_url = urlparse(url)
+        filename = os.path.basename(parsed_url.path).replace('/', '_') + ".pdf"
+
+        return send_file(
+            BytesIO(response.content),
+            download_name=filename,
+            mimetype="application/pdf",
+            as_attachment=True
+        )
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
     
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,3 +1,41 @@
+function downloadPDF(pdfLink) {
+  let fileResponse;
+
+  fetch("http://127.0.0.1:5000/download", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ link: pdfLink }),
+  })
+    .then((response) => {
+      if (!response.ok) throw new Error("Failed to fetch PDF");
+      fileResponse = response;
+      return response.blob();
+    })
+    .then((blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+
+      // Get filename from Content-Disposition header
+      const disposition = fileResponse.headers.get("Content-Disposition");
+      let filename = "downloaded.pdf";
+      if (disposition && disposition.includes("filename=")) {
+        filename = disposition.split("filename=")[1].replace(/["']/g, "");
+      }
+
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    })
+    .catch((error) => {
+      alert("Error: " + error.message);
+    });
+}
+
 const submit = document.getElementById("submit");
 
 submit.addEventListener("click", function (e) {
@@ -72,7 +110,7 @@ submit.addEventListener("click", function (e) {
           if (e.target && e.target.classList.contains("view-btn")) {
             const responseId = e.target.getAttribute("data-response-id");
             console.log(responseId);
-            
+
             fetch("http://127.0.0.1:5000/order", {
               method: "POST",
               headers: {
@@ -97,24 +135,24 @@ submit.addEventListener("click", function (e) {
                   row.innerHTML = `
             <td class="border px-4 py-2">${order["sr_no"]}</td>
             <td class="border px-4 py-2">
-              ${
-                order["order_link"]
-                  ? `<a href="${order["order_link"]}" target="_blank" class="text-blue-600 underline">View</a>`
-                  : "-"
-              }
+             ${
+               order["order_link"]
+                 ? `<a href="#" class="text-blue-600 underline" onclick="downloadPDF('${order["order_link"]}')">View</a>`
+                 : "-"
+             }
             </td>
             <td class="border px-4 py-2">${order["order_date"]}</td>
             <td class="border px-4 py-2">
               ${
                 order["corrigendum_link"]
-                  ? `<a href="${order["corrigendum_link"]}" target="_blank" class="text-blue-600 underline">View</a>`
+                  ? `<a href="#" target="_blank" class="text-blue-600 underline"  onclick="downloadPDF('${order["corrigendum_link"]}')">View</a>`
                   : "-"
               }
             </td>
             <td class="border px-4 py-2">
               ${
                 order["hindi_order"]
-                  ? `<a href="${order["hindi_order"]}" target="_blank" class="text-blue-600 underline">View</a>`
+                    ? `<a href="#" target="_blank" class="text-blue-600 underline"  onclick="downloadPDF('${order["hindi_order"]}')">View</a>`
                   : "-"
               }
             </td>
